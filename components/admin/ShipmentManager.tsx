@@ -36,22 +36,60 @@ export default function ShipmentManager() {
   const [formError, setFormError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
-  // Handle Drag & Drop or File Upload for CSV / Excel / TXT
-  const handleFileUpload = (file: File) => {
+  // Handle Drag & Drop or File Upload for CSV / Excel (.xlsx, .xls) / TXT
+  const handleFileUpload = async (file: File) => {
     setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (text) {
-        // Parse CSV or text lines
-        const lines = text
-          .split(/[\r\n,;\t]+/)
-          .map((s) => s.trim())
-          .filter((s) => s.length > 2);
-        setSerialText(lines.join('\n'));
+    try {
+      const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+      if (isExcel) {
+        const XLSX = await import('xlsx');
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        const extracted: string[] = [];
+        for (const row of rows) {
+          if (Array.isArray(row)) {
+            for (const cell of row) {
+              if (cell !== null && cell !== undefined) {
+                const str = String(cell).trim();
+                // Filter out common column header names
+                if (
+                  str.length > 2 &&
+                  !['SERIAL', 'SERIALS', 'SERIAL NUMBER', 'SERIAL_NUMBER', 'السيريال', 'رقم السيريال', 'سيريال'].includes(
+                    str.toUpperCase()
+                  )
+                ) {
+                  extracted.push(str.toUpperCase());
+                }
+              }
+            }
+          }
+        }
+        setSerialText(Array.from(new Set(extracted)).join('\n'));
+      } else {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          if (text) {
+            // Parse CSV or text lines
+            const lines = text
+              .split(/[\r\n,;\t]+/)
+              .map((s) => s.trim().toUpperCase())
+              .filter(
+                (s) =>
+                  s.length > 2 &&
+                  !['SERIAL', 'SERIALS', 'SERIAL NUMBER', 'SERIAL_NUMBER', 'السيريال', 'رقم السيريال', 'سيريال'].includes(s)
+              );
+            setSerialText(Array.from(new Set(lines)).join('\n'));
+          }
+        };
+        reader.readAsText(file);
       }
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      console.error('Error parsing shipment file:', err);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {

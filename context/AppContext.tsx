@@ -93,9 +93,84 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         localStorage.setItem('mostaqbal_warranties', JSON.stringify(clean));
       }
+
+      // Load locally stored batches from admin shipments
+      const savedBatches = localStorage.getItem('mostaqbal_batches');
+      if (savedBatches) {
+        try {
+          const parsedBatches: BatchSerial[] = JSON.parse(savedBatches);
+          if (parsedBatches.length > 0) {
+            setBatchSerials(parsedBatches);
+          }
+        } catch (e) {}
+      }
     } catch (e) {
       console.warn('Error reading from localStorage', e);
     }
+  }, []);
+
+  // Synchronize serials from Supabase Cloud in real-time
+  useEffect(() => {
+    const fetchCloudSerials = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      try {
+        const { data } = await supabase.from('serials').select('*');
+        if (data && data.length > 0) {
+          const cloudBatches: BatchSerial[] = data.map((r: any) => ({
+            serialNumber: r.serial_number,
+            brand: r.brand,
+            modelName: r.model_name || `${r.brand} معتمد`,
+            status: r.status,
+            batchCode: r.shipment_id || 'SHIP-CLOUD',
+            importShipmentDate: r.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+            standardWarrantyDays: r.brand === 'A90_PRO' ? 730 : 365,
+          }));
+          setBatchSerials(cloudBatches);
+          localStorage.setItem('mostaqbal_batches', JSON.stringify(cloudBatches));
+        }
+      } catch (err) {
+        console.warn('Could not fetch cloud serials', err);
+      }
+    };
+
+    fetchCloudSerials();
+
+    // Listen to real-time additions/updates of serials
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const channel = supabase
+        .channel('portal_serials_realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'serials' },
+          () => {
+            fetchCloudSerials();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, []);
+
+  // Listen to cross-tab admin synchronization
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('BroadcastChannel' in window)) return;
+    const bc = new BroadcastChannel('elmostqbal_admin_sync');
+    bc.onmessage = () => {
+      const savedBatches = localStorage.getItem('mostaqbal_batches');
+      if (savedBatches) {
+        try {
+          const parsed = JSON.parse(savedBatches);
+          setBatchSerials(parsed);
+        } catch (e) {}
+      }
+    };
+    return () => bc.close();
   }, []);
 
   // Update HTML dir and class when language or theme changes
