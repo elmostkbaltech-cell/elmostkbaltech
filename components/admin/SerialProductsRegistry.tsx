@@ -18,7 +18,9 @@ import {
   X, 
   Wrench,
   ShieldCheck,
-  ArrowUpDown
+  ArrowUpDown,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -94,6 +96,30 @@ export default function SerialProductsRegistry() {
     alert('تم فتح تذكرة الصيانة بنجاح وتحويل الجهاز لقسم الصيانة');
   };
 
+  const handleExportToExcel = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      const exportData = filteredSerials.map((s, idx) => ({
+        'م': idx + 1,
+        'رقم السيريال': s.serialNumber,
+        'العلامة التجارية': s.brand,
+        'الموديل': s.modelName,
+        'الحالة': s.status === 'AVAILABLE' ? 'متاح للتفعيل' : s.status === 'CLAIMED' ? 'مفعل لعميل' : 'منتهي الصلاحية',
+        'كود الشحنة': s.shipmentId,
+        'اسم العميل': s.customerName || '—',
+        'هاتف العميل': s.customerPhone || '—',
+        'تاريخ التفعيل': s.activationDate ? s.activationDate.split('T')[0] : '—',
+        'المسؤول': s.createdBy || 'الإدارة العامة',
+      }));
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'سجل الأجهزة والضمانات');
+      XLSX.writeFile(wb, `سجل_أجهزة_المستقبل_تك_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (e) {
+      console.error('Export error:', e);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header and Controls */}
@@ -109,10 +135,19 @@ export default function SerialProductsRegistry() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs text-slate-400 font-semibold">
               إجمالي المنتجات: <span className="font-bold text-white text-sm">{totalSerials}</span>
             </span>
+            <button
+              type="button"
+              onClick={handleExportToExcel}
+              className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+              title="تصدير السيريالات المعروضة إلى ملف إكسيل"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>تصدير Excel (.xlsx)</span>
+            </button>
           </div>
         </div>
 

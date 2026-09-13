@@ -15,7 +15,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  Download
 } from 'lucide-react';
 import ShipmentDetailModal from './ShipmentDetailModal';
 
@@ -96,6 +97,24 @@ export default function ShipmentManager() {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const downloadExcelTemplate = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['SERIAL_NUMBER', 'BRAND', 'MODEL_NAME', 'NOTES'],
+        ['AIWA-9INCH-2026-001', 'AIWA', 'شاشة أيوة 9 بوصة', 'شحنة الاستيراد'],
+        ['AIWA-9INCH-2026-002', 'AIWA', 'شاشة أيوة 9 بوصة', 'شحنة الاستيراد'],
+        ['TIGER-7INCH-2026-001', 'TIGER', 'شاشة تايجر 7 بوصة', 'شحنة التوفيقية'],
+        ['A90-LED-2026-001', 'A90_PRO', 'ليدات سيارات A90', 'شحنة التوفيقية'],
+      ]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'السيريالات');
+      XLSX.writeFile(wb, 'نموذج_سيريالات_شحنة_المستقبل_تك.xlsx');
+    } catch (e) {
+      console.error('Error generating Excel template:', e);
     }
   };
 
@@ -360,12 +379,22 @@ export default function ShipmentManager() {
 
               {/* Drag and drop / bulk serials */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>رفع السيريالات بالجملة (ملف إكسيل أو CSV أو نصي)</span>
-                  <span className="text-blue-400 font-normal">
-                    العدد الحالي: {parsedSerialsCount} سيريال
-                  </span>
-                </label>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-300">رفع السيريالات بالجملة (ملف إكسيل أو CSV أو نصي)</span>
+                    <span className="text-[11px] text-blue-400 font-normal">
+                      (العدد المقروء: {parsedSerialsCount} سيريال)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={downloadExcelTemplate}
+                    className="self-start sm:self-auto text-[11px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>تحميل نموذج إكسيل جاهز (.xlsx)</span>
+                  </button>
+                </div>
 
                 {/* Dropzone */}
                 <div
