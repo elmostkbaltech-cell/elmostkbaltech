@@ -1,0 +1,13 @@
+<svg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="240" rx="16" fill="#F8FAFC"/>
+  <rect x="20" y="20" width="360" height="200" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="40" y="50" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#0F172A">فاتورة شراء معتمدة / Tax Invoice</text>
+  <text x="40" y="70" font-family="Arial, sans-serif" font-size="11" fill="#64748B">محل صوت السيارات - سوق التوفيقية</text>
+  <line x1="40" y1="85" x2="360" y2="85" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="40" y="110" font-family="Arial, sans-serif" font-size="11" fill="#334155">المنتج: شاشة AIWA الذكية 9 بوصة</text>
+  <text x="40" y="130" font-family="monospace" font-size="11" font-weight="bold" fill="#2563EB">السيريال: AIWA-SCR-8821</text>
+  <text x="40" y="150" font-family="Arial, sans-serif" font-size="11" fill="#334155">تاريخ الشراء: 2024-05-10</text>
+  <circle cx="310" cy="150" r="35" fill="none" stroke="#DC2626" stroke-width="2" stroke-dasharray="4 2"/>
+  <text x="310" y="148" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#DC2626" text-anchor="middle">ختم المحل المعتمد</text>
+  <text x="310" y="162" font-family="Arial, sans-serif" font-size="8" fill="#DC2626" text-anchor="middle">PAID & STAMPED</text>
+</svg>
