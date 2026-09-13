@@ -63,7 +63,7 @@ interface AdminContextType {
   };
   updateMaintenanceStep: (ticketId: string, newStep: MaintenanceStep, technicianNotes?: string) => void;
   createMaintenanceTicket: (data: {
-    serialNumber: string;
+    serialNumber?: string;
     brand: Brand;
     customerName: string;
     customerPhone: string;
@@ -656,7 +656,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   const createMaintenanceTicket = (data: {
-    serialNumber: string;
+    serialNumber?: string;
     brand: Brand;
     customerName: string;
     customerPhone: string;
@@ -669,7 +669,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const ticketId = `MNT-${data.brand}-${Math.floor(1000 + Math.random() * 9000)}`;
     const newRecord: MaintenanceRecord = {
       ticketId,
-      serialNumber: data.serialNumber.trim().toUpperCase(),
+      serialNumber: data.serialNumber?.trim() ? data.serialNumber.trim().toUpperCase() : 'بدون سيريال (مسجل بفاتورة)',
       brand: data.brand,
       customerName: data.customerName,
       customerPhone: data.customerPhone,
