@@ -9,6 +9,7 @@ import ShipmentManager from '@/components/admin/ShipmentManager';
 import AdminMaintenanceView from '@/components/admin/AdminMaintenanceView';
 import NonSerialRegistry from '@/components/admin/NonSerialRegistry';
 import SerialProductsRegistry from '@/components/admin/SerialProductsRegistry';
+import CustomerMessagesView from '@/components/admin/CustomerMessagesView';
 import ThemeToggle from '@/components/ThemeToggle';
 import { 
   Package, 
@@ -19,12 +20,14 @@ import {
   ShieldCheck, 
   UserCheck, 
   Layers,
-  Hash
+  Hash,
+  Mail
 } from 'lucide-react';
 
 function AdminPortalContent() {
-  const { adminUser, logout, isRealtimeActive } = useAdmin();
-  const [currentTab, setCurrentTab] = useState<'SHIPMENTS' | 'MAINTENANCE' | 'NON_SERIAL' | 'SERIAL_PRODUCTS'>('SHIPMENTS');
+  const { adminUser, logout, isRealtimeActive, customerMessages } = useAdmin();
+  const [currentTab, setCurrentTab] = useState<'SHIPMENTS' | 'MAINTENANCE' | 'NON_SERIAL' | 'SERIAL_PRODUCTS' | 'MESSAGES'>('SHIPMENTS');
+  const unreadMsgCount = customerMessages.filter((m) => m.status === 'UNREAD').length;
 
   if (!adminUser) {
     return <AdminLogin />;
@@ -154,6 +157,23 @@ function AdminPortalContent() {
               <Hash className="w-4 h-4" />
               <span>4. قسم المنتجات بسيريال نمبر</span>
             </button>
+
+            <button
+              onClick={() => setCurrentTab('MESSAGES')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+                currentTab === 'MESSAGES'
+                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/25'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              <span>5. رسائل واستفسارات العملاء</span>
+              {unreadMsgCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse">
+                  {unreadMsgCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </header>
@@ -164,6 +184,7 @@ function AdminPortalContent() {
         {currentTab === 'MAINTENANCE' && <AdminMaintenanceView />}
         {currentTab === 'NON_SERIAL' && <NonSerialRegistry />}
         {currentTab === 'SERIAL_PRODUCTS' && <SerialProductsRegistry />}
+        {currentTab === 'MESSAGES' && <CustomerMessagesView />}
       </main>
 
       {/* Admin Footer */}

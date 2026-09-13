@@ -6,6 +6,7 @@ import { useApp } from '@/context/AppContext';
 import { COMPANY_INFO } from '@/lib/mock-data';
 import { Phone, MessageCircle, MapPin, Clock, ExternalLink, Mail, Send, CheckCircle2, Navigation, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getSupabaseClient } from '@/lib/supabase';
 
 export default function ContactPage() {
   const { language, t } = useApp();
@@ -21,15 +22,33 @@ export default function ContactPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    const senderName = name.trim();
+    const senderPhone = phone.trim();
+    const senderSubject = subject.trim() || 'استفسار من الموقع';
+    const senderMessage = message.trim();
+
     try {
+      // 1. Client-side direct Supabase save (Instant & 100% resilient)
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase.from('messages').insert({
+          name: senderName,
+          phone: senderPhone,
+          subject: senderSubject,
+          message: senderMessage,
+          status: 'UNREAD',
+        });
+      }
+
+      // 2. Server-side notification via API route
       await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
-          phone,
-          subject,
-          message,
+          name: senderName,
+          phone: senderPhone,
+          subject: senderSubject,
+          message: senderMessage,
           to: 'elmostkbaltech@gmail.com',
         }),
       });
@@ -44,7 +63,7 @@ export default function ContactPage() {
         setSubject('');
         setMessage('');
         setFormSubmitted(false);
-      }, 5000);
+      }, 7000);
     }
   };
 

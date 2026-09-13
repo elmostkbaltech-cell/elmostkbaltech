@@ -51,3 +51,13 @@ export interface BatchExpirationConfig {
   selectedAgeMonths: number[]; // 1 to 12
   reason?: string;
 }
+
+export interface CustomerMessage {
+  id: string;
+  name: string;
+  phone: string;
+  subject?: string;
+  message: string;
+  status: 'UNREAD' | 'READ';
+  createdAt: string;
+}

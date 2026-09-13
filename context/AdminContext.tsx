@@ -6,7 +6,8 @@ import {
   Shipment, 
   ShipmentSerial, 
   NonSerialItem, 
-  BatchExpirationConfig 
+  BatchExpirationConfig,
+  CustomerMessage
 } from '@/types/admin';
 import { 
   AdminUser, 
@@ -77,6 +78,9 @@ interface AdminContextType {
     warrantyRecord?: RegisteredWarranty;
     ticketRecord?: MaintenanceRecord;
   } | null;
+  customerMessages: CustomerMessage[];
+  markMessageAsRead: (id: string) => Promise<void>;
+  deleteMessage: (id: string) => Promise<void>;
   isRealtimeActive: boolean;
 }
 
@@ -101,6 +105,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [serials, setSerials] = useState<ShipmentSerial[]>([]);
   const [maintenanceTickets, setMaintenanceTickets] = useState<MaintenanceRecord[]>([]);
   const [nonSerialItems, setNonSerialItems] = useState<NonSerialItem[]>([]);
+  const [customerMessages, setCustomerMessages] = useState<CustomerMessage[]>([]);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isRealtimeActive, setIsRealtimeActive] = useState(false);
 
@@ -149,11 +154,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
 
     try {
-      const [shpRes, serRes, tckRes, nsiRes] = await Promise.all([
+      const [shpRes, serRes, tckRes, nsiRes, msgRes] = await Promise.all([
         supabase.from('shipments').select('*').order('created_at', { ascending: false }),
         supabase.from('serials').select('*').order('created_at', { ascending: false }),
         supabase.from('maintenance_tickets').select('*').order('created_at', { ascending: false }),
         supabase.from('non_serial_items').select('*').order('created_at', { ascending: false }),
+        supabase.from('messages').select('*').order('created_at', { ascending: false }),
       ]);
 
       if (shpRes.data && shpRes.data.length > 0) {
@@ -230,6 +236,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         setNonSerialItems(mappedNSI);
         localStorage.setItem('mostaqbal_admin_nonserial', JSON.stringify(mappedNSI));
       }
+
+      if (msgRes.data) {
+        const mappedMessages: CustomerMessage[] = msgRes.data.map((row) => ({
+          id: row.id,
+          name: row.name,
+          phone: row.phone,
+          subject: row.subject,
+          message: row.message,
+          status: row.status || 'UNREAD',
+          createdAt: row.created_at,
+        }));
+        setCustomerMessages(mappedMessages);
+      }
     } catch (e) {
       console.error('Error fetching Supabase admin state:', e);
     }
@@ -281,6 +300,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           loadSupabaseState();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'non_serial_items' }, () => {
+          loadSupabaseState();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
           loadSupabaseState();
         })
         .subscribe();
@@ -767,6 +789,32 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     };
   };
 
+  const markMessageAsRead = async (id: string) => {
+    setCustomerMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: 'READ' } : m))
+    );
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.from('messages').update({ status: 'READ' }).eq('id', id);
+      } catch (e) {
+        console.error('Error marking message read', e);
+      }
+    }
+  };
+
+  const deleteMessage = async (id: string) => {
+    setCustomerMessages((prev) => prev.filter((m) => m.id !== id));
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.from('messages').delete().eq('id', id);
+      } catch (e) {
+        console.error('Error deleting message', e);
+      }
+    }
+  };
+
   return (
     <AdminContext.Provider
       value={{
@@ -777,6 +825,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         serials,
         maintenanceTickets,
         nonSerialItems,
+        customerMessages,
+        markMessageAsRead,
+        deleteMessage,
         selectedShipment,
         setSelectedShipment,
         createShipment,
